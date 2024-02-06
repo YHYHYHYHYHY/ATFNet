@@ -102,11 +102,10 @@ class F_Block(nn.Module):
 
 
         freq_pred = freq_pred * freq_pred.shape[1]
-        # pred_seq = torch.fft.irfft(freq_pred, dim=1).real[:, -self.configs.pred_len:]
         pred_seq = torch.fft.irfft(freq_pred, dim=1)[:, -self.configs.pred_len:]
         return pred_seq
 
-class Model(nn.Module): # 时域处理模型trend项，频域模型处理seasonal项
+class Model(nn.Module): 
     def __init__(self, configs):
         super(Model, self).__init__()
         self.configs = configs
@@ -120,7 +119,6 @@ class Model(nn.Module): # 时域处理模型trend项，频域模型处理seasona
 
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
-        # return self.t_model(x_enc, x_mark_enc, x_dec, x_mark_dec)
         freq = torch.fft.rfft(x_enc - torch.mean(x_enc, dim=1, keepdim=True), dim=1)
         freq = torch.abs(freq)
         _freq = freq.clone()
