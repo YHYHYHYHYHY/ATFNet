@@ -2,14 +2,25 @@ import torch
 import torch.nn as nn
 import numpy as np
 from layers.Autoformer_EncDec import series_decomp
-from models import Autoformer, TimesNet, DLinear, FEDformer, \
-    Informer, PatchTST, FITS, FreTS, FreqNet, CompNet, \
-    CompNetv3, iTransformer, SCINet, Crossformer
 from layers.ComplexLayers import CompEncoderBlock
 from layers.Embed import PatchEmbedding
-from models.PatchLinear import LinearLayer, FlattenHead
 from layers.Transformer_EncDec import Encoder, EncoderLayer
 from layers.SelfAttention_Family import FullAttention, AttentionLayer
+
+class FlattenHead(nn.Module):
+    def __init__(self, n_vars, nf, target_window, head_dropout=0):
+        super().__init__()
+        self.n_vars = n_vars
+        self.flatten = nn.Flatten(start_dim=-2)
+        self.linear = nn.Linear(nf, target_window)
+        self.dropout = nn.Dropout(head_dropout)
+
+    def forward(self, x):  
+        x = self.flatten(x)
+        x = self.linear(x)
+        x = self.dropout(x)
+        return x
+
 
 class T_Block(nn.Module):
 
@@ -20,11 +31,9 @@ class T_Block(nn.Module):
         self.pred_len = configs.pred_len
         padding = stride
 
-        # patching and embedding
         self.patch_embedding = PatchEmbedding(
             configs.d_model, patch_len, stride, padding, configs.dropout)
 
-        # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
@@ -40,7 +49,6 @@ class T_Block(nn.Module):
             norm_layer=torch.nn.LayerNorm(configs.d_model)
         )
 
-        # Prediction Head
         self.head_nf = configs.d_model * int((configs.seq_len - patch_len) / stride + 2)
         self.head = FlattenHead(configs.enc_in, self.head_nf, configs.pred_len,head_dropout=configs.dropout)
 
@@ -49,25 +57,17 @@ class T_Block(nn.Module):
         x_enc = x_enc - means
         stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
         x_enc /= stdev
-        # do patching and embedding
         x_enc = x_enc.permute(0, 2, 1)
-        # u: [bs * nvars x patch_num x d_model]
         enc_out, n_vars = self.patch_embedding(x_enc)
 
-        # Encoder
-        # z: [bs * nvars x patch_num x d_model]
         enc_out, attns = self.encoder(enc_out)
-        # z: [bs x nvars x patch_num x d_model]
         enc_out = torch.reshape(
             enc_out, (-1, n_vars, enc_out.shape[-2], enc_out.shape[-1]))
-        # z: [bs x nvars x d_model x patch_num]
         enc_out = enc_out.permute(0, 1, 3, 2)
 
-        # Decoder
         dec_out = self.head(enc_out)  # z: [bs x nvars x target_window]
         dec_out = dec_out.permute(0, 2, 1)
 
-        # De-Normalization from Non-stationary Transformer
         dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
         dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
         return dec_out

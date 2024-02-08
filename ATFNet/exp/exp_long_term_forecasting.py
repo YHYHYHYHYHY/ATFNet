@@ -70,8 +70,8 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                pred = outputs#.detach().cpu()
-                true = batch_y#.detach().cpu()
+                pred = outputs
+                true = batch_y
 
                 loss = criterion(pred, true)
 
@@ -268,20 +268,7 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         f.close()
 
         np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
-        #np.save(folder_path + 'pred.npy', preds)
-        #np.save(folder_path + 'true.npy', trues)
-        #np.save(folder_path + 'ori.npy', oris)
-        '''
-        def batch_inverse(x, scaler):
-            x_list = []
-            for i in range(len(x)):
-                ts = scaler.inverse_transform(x[i])
-                x_list.append(ts)
-            out = np.stack(x_list)
-            return out
-        preds_ori = batch_inverse(preds, test_data.scaler)
-        trues_ori = batch_inverse(trues, test_data.scaler)
-        np.save(folder_path + 'pred_ori.npy', preds_ori)
-        np.save(folder_path + 'true_ori.npy', trues_ori)
-        '''
+        np.save(folder_path + 'pred.npy', preds)
+        np.save(folder_path + 'true.npy', trues)
+        np.save(folder_path + 'ori.npy', oris)
         return
