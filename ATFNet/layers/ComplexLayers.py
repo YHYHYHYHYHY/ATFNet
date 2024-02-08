@@ -3,11 +3,14 @@ import torch.nn as nn
 import numpy as np
 from math import sqrt
 from torch.nn.functional import relu
+
 def complex_mse(pred, label):
     delta = pred - label
     return torch.mean(torch.abs(delta) ** 2)
+
 def complex_relu(input):
     return relu(input.real).type(torch.complex64) + 1j * relu(input.imag).type(torch.complex64)
+
 def complex_dropout(input, dropout):
     mask_r = torch.ones(input.shape, dtype=torch.float32)
     mask_r = dropout(mask_r)
@@ -19,24 +22,10 @@ def apply_complex(fr, fi, input, dtype=torch.complex64):
     return (fr(input.real) - fi(input.imag)).type(dtype) \
         + 1j * (fr(input.imag) + fi(input.real)).type(dtype)
 
-def apply_complex_mhsa(fr, fi, q, k, v, dtype=torch.complex64):
-    return (fr(q.real, k.real, v.real) - fi(q.imag, k.imag, v.imag)).type(dtype) \
-        + 1j * (fr(q.imag, k.imag, v.imag) + fi(q.real, k.real, v.real)).type(dtype)
-class ComplexBN(nn.Module):
-    def __init__(self, C):
-        super(ComplexBN, self).__init__()
-        z = torch.zeros((C))
-        self.w_r = nn.Parameter(torch.tensor(sqrt(2)/2) + z)
-        self.w_i = nn.Parameter(torch.tensor(sqrt(2)/2) + z)
-        self.b_r = nn.Parameter(torch.tensor(0) + z)
-        self.b_i = nn.Parameter(torch.tensor(0) + z)
-    def forward(self, x):
-        means = torch.mean(x, dim=(0, 1))
-        std = torch.sqrt(torch.var(x, dim=(0, 1), keepdim=True))
-        x = (x - means) / std
-        w = torch.complex(self.w_r, self.w_i)
-        b = torch.complex(self.b_r, self.b_i)
-        return x * w + b
+def complex_mul(order, mat1, mat2):
+    return (torch.einsum(order, mat1.real, mat2.real) - torch.einsum(order, mat1.imag, mat2.imag)) \
+        + 1j * (torch.einsum(order, mat1.real, mat2.imag) - torch.einsum(order, mat1.imag, mat2.real))
+
 class ComplexLN(nn.Module):
     def __init__(self, C):
         super(ComplexLN, self).__init__()
@@ -52,42 +41,27 @@ class ComplexLN(nn.Module):
         w = torch.complex(self.w_r, self.w_i)
         b = torch.complex(self.b_r, self.b_i)
         return x * w + b
-class ComplexLinear(nn.Module):
 
+class ComplexLinear(nn.Module):
     def __init__(self, in_features, out_features):
         super(ComplexLinear, self).__init__()
         self.fc_r = nn.Linear(in_features, out_features)
         self.fc_i = nn.Linear(in_features, out_features)
-
     def forward(self, input):
         return apply_complex(self.fc_r, self.fc_i, input)
-
-class FullAttention(nn.Module):
-    def __init__(self, scale=None, attention_dropout=0.1, output_attention=False):
-        super(FullAttention, self).__init__()
-        self.scale = scale
-        self.output_attention = output_attention
-        self.dropout = nn.Dropout(attention_dropout)
-
-    def forward(self, queries, keys, values):
-        B, N, L, H, E = queries.shape
-        _, N, S, _, D = values.shape
-        scale = self.scale or 1. / sqrt(E)
-        scores = torch.einsum("bnlhe,bnshe->bnhls", queries, keys)
-        A = torch.softmax(scale * scores, dim=-1)
-        # A = self.dropout(torch.softmax(scale * scores, dim=-1))
-        V = torch.einsum("bnhls,bnshd->bnlhd", A, values)
-        return V.contiguous()
 
 class ComplexAttention(nn.Module):
     def __init__(self):
         super(ComplexAttention, self).__init__()
-        self.attention_r = FullAttention()
-        self.attention_i = FullAttention()
+        self.dropout = nn.Dropout(0.1)
+        self.is_activate = True
     def forward(self, q, k, v):
-        return apply_complex_mhsa(self.attention_r, self.attention_i, q, k, v)
-
-
+        scores = complex_mul("bnlhe,bnshe->bnhls", q, k)
+        if self.is_activate:
+            scores = self.dropout(torch.softmax(torch.abs(scores), dim=-1))
+            scores = torch.complex(scores, torch.zeros_like(scores))
+        V = complex_mul("bnhls,bnshd->bnlhd", scores, v)
+        return V.contiguous()
 
 class ComplexAttentionLayer(nn.Module):
     def __init__(self,  d_model, n_heads, attention=ComplexAttention(), d_keys=None,
@@ -138,7 +112,6 @@ class ComplexEncoderLayer(nn.Module):
         )
         new_x = complex_dropout(new_x, self.dropout)
         x = x + new_x
-        # x = x.squeeze(-1)
 
         x = self.norm1(x)
         y = x
@@ -147,7 +120,6 @@ class ComplexEncoderLayer(nn.Module):
         y = self.Linear2(y)
         y = complex_dropout(y, self.dropout)
 
-        # return x + y
         return self.norm2(x + y)
 
 class ComplexEncoder(nn.Module):
@@ -160,16 +132,17 @@ class ComplexEncoder(nn.Module):
         return x
 
 class CompEncoderBlock(nn.Module):
-    # Input: DFT(input sequence), shape: [B, L:seq_len/2, n_vars] dtype: torch.cfloat
-    # Output: DFT(input sequence + pred sequence), shape: [B, L:(seq_len+pred_len)/2, n_vars] dtype: torch.cfloat
-    def __init__(self, configs):
+    # Input: Extended_DFT(input sequence), shape: [B, L:(seq_len+pred_len)//2+1, n_vars] dtype: torch.cfloat
+    # Output: DFT(input sequence + pred sequence), shape: [B, L:(seq_len+pred_len)//2+1, n_vars] dtype: torch.cfloat
+    def __init__(self, configs, extended=True):
         super(CompEncoderBlock, self).__init__()
         self.configs = configs
         self.device = configs.device
         self.is_emb = True
-
-        self.ori_len = int((configs.seq_len + configs.pred_len) / 2) + 1
+        self.ori_len = int((configs.seq_len) / 2) + 1
         self.tar_len = int((configs.seq_len + configs.pred_len) / 2) + 1
+        if extended:
+            self.ori_len = int((configs.seq_len + configs.pred_len) / 2) + 1
         self.d_ff = configs.fnet_d_ff
         self.d_model = configs.fnet_d_model
         if not self.is_emb:
@@ -189,12 +162,11 @@ class CompEncoderBlock(nn.Module):
                 ) for _ in range(configs.fnet_layers)
             ]
         )
-
-    def forward(self, x):  # x.shape: [B, L:seq_len/2, n_vars] dtype: torch.cfloat
+    def forward(self, x):  
         x = x.permute(0, 2, 1)
         if self.is_emb:
             x = self.emb(x)
         x = complex_dropout(x, self.dropout)
-        x = self.encoder(x) # x.shape: [B, n_vars, d_model]
+        x = self.encoder(x) 
         x = self.projection(x)
         return x.permute(0, 2, 1)

@@ -1,9 +1,9 @@
 import os
 import torch
-from models import Autoformer, TimesNet, DLinear, FEDformer, \
-    Informer, PatchTST, CompNet, TFNet, FreTS, FITS, FreqNet, \
-    CompNetv3, Crossformer, FiLM, SCINet, TFDNet, iTransformer, \
-    TFNetv3, ATFNet, ATFNetv1, ATFNetv2, ATFNetv3, ATFNetv4
+from models import ATFNet, Autoformer, TimesNet, DLinear, FEDformer, \
+    Informer, PatchTST, CompNet, TFNet, FreTS, FITS,  \
+   Crossformer, FiLM, SCINet, TFDNet, iTransformer, \
+     
 
 
 class Exp_Basic(object):
@@ -24,15 +24,7 @@ class Exp_Basic(object):
             'FreTS': FreTS,
             'FITS': FITS,
             'CompNet': CompNet,
-            'CompNetv3': CompNetv3,
-            'TFNet': TFNet,
-            'TFNetv3': TFNetv3,
-            'FreqNet': FreqNet,
             'ATFNet': ATFNet,
-            'ATFNetv1': ATFNetv1,
-            'ATFNetv2': ATFNetv2,
-            'ATFNetv3': ATFNetv3,
-            'ATFNetv4': ATFNetv4
         }
         self.device = self._acquire_device()
         self.args.device = self.device
