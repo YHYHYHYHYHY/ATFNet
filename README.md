@@ -13,5 +13,7 @@ Official implement of ATFNet: Adaptive Time-Frequency Ensembled Network for Long
 - Forecasting Results Visualization
 
 ![Visual](figs/ETTm2_case.svg)
-<center>Visualization of the input-192-predict-192 forecasting results on ETTm2 dataset.</center>
+<center>(Visualization of the input-192-predict-192 forecasting results on ETTm2 dataset.)</center>
 
+## Acknowledgement
+We acknowledge with great appreciation the significant contributions of the following GitHub repositories, which have provided invaluable code bases and datasets for our research.
