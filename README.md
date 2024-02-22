@@ -17,3 +17,14 @@ Official implement of ATFNet: Adaptive Time-Frequency Ensembled Network for Long
 
 ## Acknowledgement
 We acknowledge with great appreciation the significant contributions of the following GitHub repositories, which have provided invaluable code bases and datasets for our research.
+
+- https://github.com/thuml/Time-Series-Library
+- https://github.com/cure-lab/SCINet.
+- https://github.com/aikunyi/FreTS.
+- https://github.com/VEWOXIC/FITS
+- https://github.com/microsoft/StemGNN/
+- https://github.com/thuml/Autoformer.
+- https://github.com/MAZiqing/FEDformer
+
+---
+Further detailed information will be updated in the repository subsequent to the completion of the review process.
