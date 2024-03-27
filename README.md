@@ -4,6 +4,11 @@ Official implement of ATFNet: Adaptive Time-Frequency Ensembled Network for Long
 ## Material for Rebuttal
 ### 1. Visualization of cases in Figure 1 (b) and (c)
 ![](figs/Figure1_showcase.png)
+### 2. Full results for multi-variate forecasting under TimesNet setting. 
+All baseline results are directly referenced from iTransformer[1]
+
+[1] Liu Y, Hu T, Zhang H, et al. itransformer: Inverted transformers are effective for time series forecasting[C]//The Thirteenth International Conference on Learning Representations. 2024.
+![](figs/Result.png)
 
 ## Model Architecture
 ![ATFNet](figs/ATFNet.png)
