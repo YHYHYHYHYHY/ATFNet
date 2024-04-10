@@ -1,7 +1,7 @@
 # ATFNet
 Official implement of ATFNet: Adaptive Time-Frequency Ensembled Network for Long-term Time Series Forecasting
 
-## Material for Rebuttal
+## Supplementary material
 ### 1. Visualization of cases in Figure 1 (b) and (c)
 ![](figs/Figure1_showcase.png)
 ### 2. Full results for multi-variate forecasting under TimesNet setting. 
