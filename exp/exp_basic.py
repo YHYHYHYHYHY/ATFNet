@@ -1,8 +1,8 @@
 import os
 import torch
 from models import ATFNet, Autoformer, TimesNet, DLinear, FEDformer, \
-    Informer, PatchTST, FreTS, FITS, TFDNet \
-   Crossformer, FiLM, SCINet, iTransformer, \
+    Informer, PatchTST, FreTS, FITS, TFDNet, \
+   Crossformer, FiLM, SCINet, iTransformer \
      
 
 
