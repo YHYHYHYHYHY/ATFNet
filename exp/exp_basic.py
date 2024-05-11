@@ -1,8 +1,8 @@
 import os
 import torch
 from models import ATFNet, Autoformer, TimesNet, DLinear, FEDformer, \
-    Informer, PatchTST, CompNet, TFNet, FreTS, FITS,  \
-   Crossformer, FiLM, SCINet, TFDNet, iTransformer, \
+    Informer, PatchTST, FreTS, FITS, TFDNet \
+   Crossformer, FiLM, SCINet, iTransformer, \
      
 
 
@@ -23,7 +23,6 @@ class Exp_Basic(object):
             'TFDNet': TFDNet,
             'FreTS': FreTS,
             'FITS': FITS,
-            'CompNet': CompNet,
             'ATFNet': ATFNet,
         }
         self.device = self._acquire_device()
