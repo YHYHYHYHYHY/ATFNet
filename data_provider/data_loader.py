@@ -22,6 +22,10 @@ class Dataset_Custom(Dataset):
                  features='S', data_path='ETTh1.csv',
                  target='OT', scale=True, timeenc=0, freq='h', seasonal_patterns=None):
         
+        self.seq_len = size[0]
+        self.label_len = size[1]
+        self.pred_len = size[2]
+        
         assert flag in ['train', 'test', 'val']
         type_map = {'train': 0, 'val': 1, 'test': 2}
         self.set_type = type_map[flag]
