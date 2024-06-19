@@ -20,8 +20,6 @@ if __name__ == '__main__':
     parser.add_argument('--is_training', type=int,  default=1, help='status')
     parser.add_argument('--model_id', type=str, default='test', help='model id')
     parser.add_argument('--model', type=str, help='model name, options: [Autoformer, Transformer, TimesNet]')
-    parser.add_argument('--t_model', type=str, default='PatchTST')
-    parser.add_argument('--f_model', type=str, default='CompNet')
 
     # data loader
     parser.add_argument('--data', type=str, default='ETTm1', help='dataset type')
@@ -35,17 +33,11 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
     parser.add_argument('--exp_type', type=str, default='multi', help='experiment type')
 
-    # forecasting task
+    # forecasting setting
     parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
     parser.add_argument('--label_len', type=int, default=48, help='start token length')
     parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
     parser.add_argument('--seasonal_patterns', type=str, default='Monthly', help='subset for M4')
-
-    # inputation task
-    parser.add_argument('--mask_rate', type=float, default=0.25, help='mask ratio')
-
-    # anomaly detection task
-    parser.add_argument('--anomaly_ratio', type=float, default=0.25, help='prior anomaly ratio (%)')
 
     # model define
     parser.add_argument('--top_k', type=int, default=2, help='for TimesBlock')
