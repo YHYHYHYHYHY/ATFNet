@@ -24,7 +24,7 @@ def apply_complex(fr, fi, input, dtype=torch.complex64):
 
 def complex_mul(order, mat1, mat2):
     return (torch.einsum(order, mat1.real, mat2.real) - torch.einsum(order, mat1.imag, mat2.imag)) \
-        + 1j * (torch.einsum(order, mat1.real, mat2.imag) - torch.einsum(order, mat1.imag, mat2.real))
+        + 1j * (torch.einsum(order, mat1.real, mat2.imag) + torch.einsum(order, mat1.imag, mat2.real))
 
 class ComplexLN(nn.Module):
     def __init__(self, C):
